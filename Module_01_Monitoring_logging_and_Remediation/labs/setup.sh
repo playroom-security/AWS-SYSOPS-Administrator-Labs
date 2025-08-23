@@ -11,9 +11,13 @@ private_sub_cidr="10.10.2.0/24"
 AMI_ID="ami-08a6efd148b1f7504" # Amazon Linux 2 AMI (HVM), SSD Volume Type for us-east-1
 INSTANCE_TYPE="t3.micro"
 KEY_NAME="my-key-pair" # Replace with your existing key pair name
-RoleName="ec2-cloudwatch-role"
-InstanceProfileName="ec2-cloudwatch-profile"
+RoleName="ec2CloudwatchRole"
+InstanceProfileName="ec2CloudwatchProfile"
 SECURITY_GROUP="PublicSubnetSG" # Replace with your existing security group name   
+
+# Colour codes for output
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color 
 
 
 
@@ -114,7 +118,8 @@ echo "Creating route to Internet Gateway in Route Table"
 aws ec2 create-route \
     --route-table-id $RouteTableId \
     --destination-cidr-block "0.0.0.0/0" \
-    --gateway-id $InternetGatewayId
+    --gateway-id $InternetGatewayId \
+    > /dev/null
 sleep 5
 
 # Associate the route table with the Public subnet
@@ -162,8 +167,8 @@ aws ec2 create-key-pair \
     --key-name "my-key-pair" \
     --key-type "rsa" \
     --key-format "pem" \
-    --output text > my-key-pair.pem
-chmod 400 my-key-pair.pem
+    --output text > my-key-pair.pem 
+chmod 400 my-key-pair.pem > /dev/null
 echo "Key pair created and saved to my-key-pair.pem" >> monitoring-setup.txt
 # Wait for the key pair to be created
 sleep 5
@@ -177,20 +182,20 @@ InstanceId=$(aws ec2 run-instances \
     --instance-type $INSTANCE_TYPE \
     --subnet-id $SubnetIdPublicSubnet \
     --associate-public-ip-address \
-    --security-group-ids $SECURITY_GROUP \
+    --security-group-ids $SecurityGroupId \
     --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=aws-sysops-ec2-instance}]' \
     --key-name $KEY_NAME \
     --output text \
     --query 'Instances[0].InstanceId')
 echo "EC2 Instance ID: $InstanceId" >> monitoring-setup.txt
 # Wait for the instance to be in running state
-sleep 30
+sleep 10
 
 # Get the public IP address of the EC2 instance
 echo "Retrieving public IP address of the EC2 instance"
 public_ip=$(aws ec2 describe-instances \
     --region $REGION \
-    --instance-ids $INSTANCE_ID \
+    --instance-ids $InstanceId \
     --filters "Name=instance-state-name,Values=running" \
     --query 'Reservations[0].Instances[0].PublicIpAddress' \
     --output text)
@@ -200,11 +205,25 @@ if [ "$public_ip" == "None" ]; then
 fi
 
 # Create an IAM role for the EC2 instance
+
+cat <<EOF > assume-role-trust-policy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "ec2.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
+EOF
+
 echo "Creating IAM role for EC2 instance"
-aws iam create-role \
-    --role-name $RoleName \
+aws iam create-role --role-name $RoleName \
     --assume-role-policy-document file://assume-role-trust-policy.json \
-    --region $REGION \  
     > /dev/null
 
 # Attach the CloudWatch policy to the role
@@ -212,7 +231,6 @@ echo "Attaching CloudWatch policy to the IAM role"
 aws iam attach-role-policy \
     --role-name $RoleName \
     --policy-arn arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy \
-    --region $REGION \
     > /dev/null
 sleep 5
 
@@ -220,7 +238,6 @@ sleep 5
 echo "Creating Instance Profile for EC2 instance"
 aws iam create-instance-profile \
     --instance-profile-name $InstanceProfileName \
-    --region $REGION \
     > /dev/null
 sleep 5
 
@@ -228,13 +245,13 @@ sleep 5
 echo "Attaching IAM Role to Instance Profile"
 aws iam add-role-to-instance-profile \
     --instance-profile-name $InstanceProfileName \
-    --role-name $RoleName \
-    --region $REGION \
+    --role-name $RoleName
     > /dev/null
 sleep 5
 
 
-echo "EC2 instance launched in $REGION using AMI $AMI_ID"
-echo "Public IP of the instance: $public_ip"
+
+echo -e "${GREEN}EC2 instance launched in $REGION using AMI $AMI_ID...${NC}"
+echo -e "${GREEN}Public IP of the instance: $public_ip...${NC}"
 
 
