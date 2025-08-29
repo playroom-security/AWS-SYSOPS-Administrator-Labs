@@ -98,7 +98,7 @@ You can see the **Image status** as `Building` Under the **Output image** tab in
 
 After a few minutes, the build instance will be terminated and a test instance will be created.
 
-[test-instance-created](/Assets/test-instance-ec2-image.png)
+![test-instance-created](/Assets/test-instance-ec2-image.png)
 
 After a few minutes, the test instance will be terminated and the AMI will be created.
 
