@@ -96,7 +96,7 @@ You can see the **Image status** as `Building` Under the **Output image** tab in
 
 ![image-building-status](/Assets/ec2-img-builder-buiding.png)
 
-After a few minutes, the build instance will be terminated and a test instance will be created.
+After a few minutes, the build instance will be terminated and a test instance will be created and later terminated..
 
 ![test-instance-created](/Assets/test-instance-ec2-image.png)
 
