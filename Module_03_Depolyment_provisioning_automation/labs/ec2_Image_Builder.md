@@ -96,12 +96,27 @@ You can see the **Image status** as `Building` Under the **Output image** tab in
 
 ![image-building-status](/Assets/ec2-img-builder-buiding.png)
 
+After a few minutes, the build instance will be terminated and a test instance will be created.
+
+[test-instance-created](/Assets/test-instance-ec2-image.png)
+
+After a few minutes, the test instance will be terminated and the AMI will be created.
 
 
+## Step 9: Launch the AMI from the ec2 console
+1. Go to the EC2 console at [https://console.aws.amazon.com/ec2/](https://console.aws.amazon.com/ec2/).
+2. Click on **Launch Instance**.
+3. Choose the **My AMIs** tab.
+4. You can now select the AMI that you created in the previous step.
+
+![launch-ami](/Assets/new-ami.png)
 
 
-
-
+## Cleanup
+1. Go to the EC2 console at [https://console.aws.amazon.com/ec2/](https://console.aws.amazon.com/ec2/).
+2. Click on **AMIs**.
+3. Select the AMI that you created in the previous step.
+4. Click on **Actions** and select **Deregister AMI**.
 
 
 
